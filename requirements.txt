@@ -4,3 +4,6 @@ asyncpg
 sqlalchemy
 alembic
 psycopg2-binary
+passlib[bcrypt]
+PyJWT
+pwdlib[argon2]
