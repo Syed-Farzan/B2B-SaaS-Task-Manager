@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-
+import os
 from app.models import orgnization
 from app.models import projects
 from app.models import tasks
@@ -13,6 +13,14 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# DATABASE_URL is currently: postgresql+asyncpg://postgres:12345@db:5432/saas_task_manager
+
+sync_url = DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+# sync_url becomes:          postgresql+psycopg2://postgres:12345@db:5432/saas_task_manager
+
+config.set_main_option("sqlalchemy.url", sync_url)
+# now Alembic uses psycopg2 instead of asyncpg — works fine
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:

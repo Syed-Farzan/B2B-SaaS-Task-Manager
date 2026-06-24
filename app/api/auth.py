@@ -51,9 +51,9 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 
     token = create_access_token(
         {
-            "sub": email_exists.id,
+            "sub": str(email_exists.id),
             "role": email_exists.role,
-            "organization_id": email_exists.organization_id,
+            "organization_id": str(email_exists.organization_id),
         }
     )
     return token
