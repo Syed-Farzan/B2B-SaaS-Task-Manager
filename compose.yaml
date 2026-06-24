@@ -29,7 +29,7 @@ services:
       - "8000:8000"
 
     environment:
-      - DATABASE_URL=postgresql://postgres:12345@db:5432/saas_task_manager
+      - DATABASE_URL= ${URL}
 
 volumes:
   postgres_data:
