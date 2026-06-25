@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr
 
+from uuid import UUID
+
 
 class UserRegister(BaseModel):
 
@@ -18,4 +20,4 @@ class TokenReturn(BaseModel):
 
     user: EmailStr
     role: str
-    organization_id: str
+    organization_id: UUID

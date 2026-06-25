@@ -11,6 +11,7 @@ class Tasks(Base):
     title = Column(String(255), nullable=False)
     status = Column(String(50), default="To Do")
     priority = Column(String(50), default="Medium")
+    created_at = Column(DateTime, default=datetime.datetime.now)
     project_id = Column(
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),

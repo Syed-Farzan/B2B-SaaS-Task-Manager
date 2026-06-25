@@ -4,6 +4,7 @@ from app.models import orgnization
 from app.models import projects
 from app.models import tasks
 from app.models import users
+from app.models import comment
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from app.db.database import Base
