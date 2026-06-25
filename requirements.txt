@@ -9,3 +9,4 @@ PyJWT
 pwdlib[argon2]
 pydantic-settings
 pydantic[email]
+python-multipart

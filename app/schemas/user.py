@@ -12,3 +12,10 @@ class UserLogin(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class TokenReturn(BaseModel):
+
+    user: EmailStr
+    role: str
+    organization_id: str
