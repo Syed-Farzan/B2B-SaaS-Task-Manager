@@ -19,17 +19,17 @@ A **multi-tenant, production-grade backend API** built with FastAPI and PostgreS
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | FastAPI |
-| Database | PostgreSQL 15 |
-| ORM | SQLAlchemy 2.0 (Async) |
-| Migrations | Alembic |
-| Auth | JWT (PyJWT) + Bcrypt |
-| Validation | Pydantic v2 |
+| Layer            | Technology              |
+| ---------------- | ----------------------- |
+| Framework        | FastAPI                 |
+| Database         | PostgreSQL 15           |
+| ORM              | SQLAlchemy 2.0 (Async)  |
+| Migrations       | Alembic                 |
+| Auth             | JWT (PyJWT) + Bcrypt    |
+| Validation       | Pydantic v2             |
 | Containerization | Docker + Docker Compose |
-| Runtime | Uvicorn (ASGI) |
-| Language | Python 3.11 |
+| Runtime          | Uvicorn (ASGI)          |
+| Language         | Python 3.11             |
 
 ---
 
@@ -142,26 +142,26 @@ tasks
 
 ### Auth & Workspace
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
+| Method | Endpoint                | Access | Description                                           |
+| ------ | ----------------------- | ------ | ----------------------------------------------------- |
 | `POST` | `/api/v1/auth/register` | Public | Creates a new tenant org + root Admin user atomically |
-| `POST` | `/api/v1/auth/login` | Public | Returns access JWT + refresh JWT |
-| `POST` | `/api/v1/users/invite` | Admin | Registers a new member into the caller's organization |
+| `POST` | `/api/v1/auth/login`    | Public | Returns access JWT + refresh JWT                      |
+| `POST` | `/api/v1/users/invite`  | Admin  | Registers a new member into the caller's organization |
 
 ### Projects
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `GET` | `/api/v1/projects` | Admin & Member | Lists all projects scoped to caller's org |
-| `POST` | `/api/v1/projects` | Admin | Creates a project bound to caller's tenant |
+| Method | Endpoint           | Access         | Description                                |
+| ------ | ------------------ | -------------- | ------------------------------------------ |
+| `GET`  | `/api/v1/projects` | Admin & Member | Lists all projects scoped to caller's org  |
+| `POST` | `/api/v1/projects` | Admin          | Creates a project bound to caller's tenant |
 
 ### Tasks
 
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/projects/{project_id}/tasks` | Admin | Creates a task inside a validated project |
-| `PATCH` | `/api/v1/tasks/{task_id}/status` | Admin & Member | Advances task status (To Do → In Progress → Done) |
-| `POST` | `/api/v1/tasks/{task_id}/comments` | Admin & Member | Appends a comment after validating tenant context |
+| Method  | Endpoint                              | Access         | Description                                       |
+| ------- | ------------------------------------- | -------------- | ------------------------------------------------- |
+| `POST`  | `/api/v1/projects/{project_id}/tasks` | Admin          | Creates a task inside a validated project         |
+| `PATCH` | `/api/v1/tasks/{task_id}/status`      | Admin & Member | Advances task status (To Do → In Progress → Done) |
+| `POST`  | `/api/v1/tasks/{task_id}/comments`    | Admin & Member | Appends a comment after validating tenant context |
 
 ---
 
@@ -245,10 +245,10 @@ curl -X POST http://localhost:8000/api/v1/users/invite \
 
 ## 🐳 Docker Services
 
-| Service | Image | Port |
-|---|---|---|
-| `api` | `python:3.11-slim` | `8000:8000` |
-| `db` | `postgres:15-alpine` | Internal only |
+| Service | Image                | Port          |
+| ------- | -------------------- | ------------- |
+| `api`   | `python:3.11-slim`   | `8000:8000`   |
+| `db`    | `postgres:15-alpine` | Internal only |
 
 Data persists across restarts via the `postgres_data` named volume mapped to `/var/lib/postgresql/data`.
 
@@ -282,4 +282,4 @@ Data persists across restarts via the `postgres_data` named volume mapped to `/v
 
 **Syed Farzan**  
 Backend Engineering · FastAPI · PostgreSQL  
-[GitHub](https://github.com/Syed-Farzan) · [LinkedIn](https://linkedin.com/in/your-handle)
+[GitHub](https://github.com/Syed-Farzan) · [LinkedIn](https://www.linkedin.com/in/syed-arhan-6b1bb327b?utm_source=share_via&utm_content=profile&utm_medium=member_ios)
