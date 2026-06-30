@@ -47,41 +47,26 @@ async def get_project(
     return project
 
 
-@api_proj.post("/projects/{project_id}/tasks", response_model=TaskResponse)
-async def create_task(
+@api_proj.get("/projects/{project_id}/tasks", response_model=list[TaskResponse])
+async def get_tasks(
     project_id: UUID,
-    task: TaskCreate,
     db: AsyncSession = Depends(get_db),
     current_user: TokenReturn = Depends(get_current_user),
 ):
-    if current_user.role != "Admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Only admins can create tasks",
-        )
-    project_act = await db.execute(select(Projects).where(Projects.id == project_id))
 
+    project_act = await db.execute(select(Projects).where(Projects.id == project_id))
     project = project_act.scalar_one_or_none()
-    if not project:
+
+    if not project or project.organization_id != current_user.organization_id:
         raise HTTPException(
             status_code=404,
             detail="Project not found",
         )
-    if project.organization_id != current_user.organization_id:
-        raise HTTPException(
-            status_code=404,
-            detail="Project not found",
-        )
-    task_pack = Tasks(
-        title=task.title,
-        status=task.status,
-        priority=task.priority,
-        project_id=project.id,
-    )
-    db.add(task_pack)
-    await db.commit()
-    await db.refresh(task_pack)
-    return task_pack
+
+    tasks_result = await db.execute(select(Tasks).where(Tasks.project_id == project_id))
+    tasks = tasks_result.scalars().all()
+
+    return tasks
 
 
 @api_proj.patch("/tasks/{task_id}/status", response_model=TaskResponse)

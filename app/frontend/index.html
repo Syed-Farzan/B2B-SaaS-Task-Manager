@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-200 p-8 font-sans">
+
+    <div id="auth-section" class="max-w-md mx-auto bg-slate-800 p-8 rounded-xl shadow-lg border border-slate-700 mt-12">
+        <h2 id="auth-title" class="text-2xl font-bold mb-6 text-center text-white">Workspace Login</h2>
+        <form id="auth-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                <input type="email" id="email" class="w-full p-3 bg-slate-900 border border-slate-600 rounded focus:border-indigo-500 focus:outline-none" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                <input type="password" id="password" class="w-full p-3 bg-slate-900 border border-slate-600 rounded focus:border-indigo-500 focus:outline-none" required>
+            </div>
+            <div id="org-field" class="hidden">
+                <label class="block text-sm font-medium text-slate-300 mb-1">Organization Name</label>
+                <input type="text" id="org_name" class="w-full p-3 bg-slate-900 border border-slate-600 rounded focus:border-indigo-500 focus:outline-none">
+            </div>
+            <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded transition">Sign In</button>
+        </form>
+        <div class="mt-6 text-sm text-center text-slate-400">
+            <span id="toggle-text">New workspace?</span> 
+            <button type="button" id="toggle-auth-btn" class="text-indigo-400 hover:text-indigo-300 underline font-medium ml-1">Create Account</button>
+        </div>
+    </div>
+
+    <div id="dashboard-section" class="hidden max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
+            <h1 class="text-xl font-bold text-white">Workspace Dashboard</h1>
+            <div class="flex items-center gap-4">
+                <span id="user-greeting" class="text-sm text-slate-400">Loading profile...</span>
+                <button onclick="logout()" class="text-sm bg-red-900/30 text-red-400 hover:bg-red-900/50 py-1 px-3 rounded border border-red-900/50 transition">Logout</button>
+            </div>
+        </div>
+
+        <div class="flex gap-6">
+            <div class="w-1/3 bg-slate-800 p-6 rounded-xl border border-slate-700 h-[80vh] flex flex-col">
+                <h2 class="text-lg font-bold mb-4 text-white">Projects</h2>
+                
+                <div class="mb-4 space-y-3 bg-slate-900 p-4 rounded-lg border border-slate-700 shrink-0">
+                    <input type="text" id="proj-title" placeholder="New Project Title" class="w-full p-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="proj-desc" placeholder="Short description" class="w-full p-2 bg-slate-800 border border-slate-600 rounded text-sm focus:outline-none focus:border-indigo-500">
+                    <button onclick="createNewProject()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded text-sm font-bold text-white transition">Create Project</button>
+                </div>
+                
+                <div id="project-list" class="space-y-3 overflow-y-auto flex-1 pr-2">
+                    </div>
+            </div>
+
+            <div class="w-2/3 bg-slate-800 p-6 rounded-xl border border-slate-700 h-[80vh] flex flex-col">
+                <h2 class="text-2xl font-bold mb-4 text-indigo-400" id="active-project-name">Select a Project</h2>
+                
+                <div id="task-trigger-zone" class="hidden mb-6 flex gap-3 shrink-0">
+                    <input type="text" id="task-title" placeholder="What needs to be done?" class="flex-1 p-3 bg-slate-900 border border-slate-600 rounded focus:border-indigo-500 focus:outline-none">
+                    <button onclick="createNewTask()" class="bg-indigo-600 hover:bg-indigo-500 px-6 rounded font-bold text-white transition">Add Task</button>
+                </div>
+                
+                <div id="tasks-container" class="space-y-4 overflow-y-auto flex-1 pr-2">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000/api/v1"; 
+        let token = localStorage.getItem("token") || null;
+        let isLoginMode = true;
+        let selectedProjectId = null;
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            if (token) showDashboard();
+            else showAuth();
+            document.getElementById("project-list").addEventListener("click", handleProjectClick);
+        });
+
+        // Auth Form Toggle
+        document.getElementById("toggle-auth-btn").addEventListener("click", () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById("auth-title").innerText = isLoginMode ? "Workspace Login" : "Provision New Tenant";
+            document.getElementById("submit-btn").innerText = isLoginMode ? "Sign In" : "Register Workspace";
+            document.getElementById("toggle-text").innerText = isLoginMode ? "New workspace?" : "Already registered?";
+            document.getElementById("toggle-auth-btn").innerText = isLoginMode ? "Create Account" : "Sign In";
+            document.getElementById("org-field").classList.toggle("hidden", isLoginMode);
+            document.getElementById("auth-form").reset();
+        });
+
+        // Login / Register
+        document.getElementById("auth-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            if (isLoginMode) {
+                const formData = new URLSearchParams();
+                formData.append("username", email);
+                formData.append("password", password);
+
+                try {
+                    const response = await fetch(`${API_BASE}/login`, { method: "POST", body: formData });
+                    if (!response.ok) await handleApiError(response, "Invalid Auth Credentials");
+                    const data = await response.json();
+                    token = data.access_token;
+                    localStorage.setItem("token", token);
+                    showDashboard();
+                } catch (err) { alert(err.message); }
+            } else {
+                const orgName = document.getElementById("org_name").value;
+                try {
+                    const response = await fetch(`${API_BASE}/register`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, password, organization_name: orgName })
+                    });
+                    if (!response.ok) await handleApiError(response, "Registration failed.");
+                    alert("Account provisioned! Please login.");
+                    document.getElementById("toggle-auth-btn").click();
+                } catch (err) { alert(err.message); }
+            }
+        });
+
+        function showAuth() {
+            document.getElementById("auth-section").classList.remove("hidden");
+            document.getElementById("dashboard-section").classList.add("hidden");
+        }
+
+        function showDashboard() {
+            document.getElementById("auth-section").classList.add("hidden");
+            document.getElementById("dashboard-section").classList.remove("hidden");
+            loadUserProfile();
+            loadProjects(); 
+        }
+
+        function logout() {
+            token = null;
+            localStorage.removeItem("token");
+            selectedProjectId = null;
+            document.getElementById("auth-form").reset();
+            document.getElementById("project-list").innerHTML = "";
+            document.getElementById("tasks-container").innerHTML = "";
+            document.getElementById("task-trigger-zone").classList.add("hidden");
+            document.getElementById("active-project-name").innerText = "Select a Project";
+            showAuth();
+        }
+
+        // --- API Base Helpers ---
+
+        async function handleApiError(response, fallbackMessage) {
+            let errMsg = fallbackMessage || response.statusText;
+            try {
+                const errData = await response.json();
+                errMsg = errData.detail || errMsg;
+            } catch(e) {} 
+            throw new Error(errMsg);
+        }
+
+        async function fetchWithAuth(endpoint, options = {}) {
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+                ...options.headers
+            };
+            const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+            
+            if (response.status === 401) {
+                logout();
+                alert("Session expired. Please log in again.");
+                throw new Error("Unauthorized");
+            }
+            if (!response.ok) await handleApiError(response, `API request failed: ${response.statusText}`);
+            return response.json();
+        }
+
+        // --- User Logic ---
+
+        async function loadUserProfile() {
+            try {
+                // Uses your GET /me route to show the user's email
+                const user = await fetchWithAuth("/me");
+                document.getElementById("user-greeting").innerText = `Signed in as ${user.sub || 'User'}`;
+            } catch (err) {
+                console.error("Failed to load profile", err);
+            }
+        }
+
+        // --- Projects Logic ---
+
+        async function loadProjects() {
+            try {
+                const projects = await fetchWithAuth("/projects");
+                const list = document.getElementById("project-list");
+                
+                if (projects.length === 0) {
+                    list.innerHTML = `<p class="text-sm text-slate-500 italic p-4">No projects found.</p>`;
+                    return;
+                }
+
+                list.innerHTML = projects.map(p => {
+                    const safeTitle = p.title.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const safeDesc = p.description ? p.description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'No description provided.';
+                    
+                    return `
+                    <div data-id="${p.id}" data-name="${safeTitle}" class="project-card p-3 bg-slate-900 rounded-lg cursor-pointer hover:bg-slate-700 hover:border-indigo-500 transition border border-slate-700 group">
+                        <h4 class="font-bold text-sm text-slate-200 group-hover:text-indigo-400 transition">${safeTitle}</h4>
+                        <p class="text-xs text-slate-400 mt-1 truncate">${safeDesc}</p>
+                    </div>
+                `}).join('');
+            } catch (err) {
+                console.error("Failed to load projects:", err);
+            }
+        }
+
+        function handleProjectClick(e) {
+            const card = e.target.closest('.project-card');
+            if (card) {
+                // Remove highlight from all, add to clicked
+                document.querySelectorAll('.project-card').forEach(c => c.classList.remove('border-indigo-500', 'bg-slate-800'));
+                card.classList.add('border-indigo-500', 'bg-slate-800');
+                
+                selectedProjectId = card.getAttribute('data-id');
+                document.getElementById("active-project-name").innerText = card.getAttribute('data-name');
+                document.getElementById("task-trigger-zone").classList.remove("hidden");
+                loadTasks();
+            }
+        }
+
+        async function createNewProject() {
+            const titleInput = document.getElementById("proj-title");
+            const descInput = document.getElementById("proj-desc");
+            if (!titleInput.value.trim()) return alert("Project title is required.");
+            
+            try {
+                await fetchWithAuth("/projects", {
+                    method: "POST",
+                    body: JSON.stringify({ title: titleInput.value, description: descInput.value })
+                });
+                titleInput.value = "";
+                descInput.value = "";
+                loadProjects();
+            } catch (err) { alert(err.message); }
+        }
+
+        // --- Tasks & Comments Logic ---
+
+        async function loadTasks() {
+            if (!selectedProjectId) return;
+            try {
+                const tasks = await fetchWithAuth(`/projects/${selectedProjectId}/tasks`); 
+                const container = document.getElementById("tasks-container");
+                
+                if (tasks.length === 0) {
+                    container.innerHTML = `<p class="text-sm text-slate-500 italic p-4 bg-slate-900 rounded border border-slate-700">No tasks in this project yet.</p>`;
+                    return;
+                }
+
+                // Build task cards
+                container.innerHTML = tasks.map(t => {
+                    const safeTitle = t.title.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const statusColor = t.status === "Done" ? "text-emerald-400 bg-emerald-900/30 border-emerald-800" : 
+                                        t.status === "In Progress" ? "text-blue-400 bg-blue-900/30 border-blue-800" : 
+                                        "text-slate-300 bg-slate-700 border-slate-600";
+                    return `
+                    <div class="p-4 bg-slate-900 rounded-lg border border-slate-700 shadow-sm transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <p class="font-medium text-slate-200">${safeTitle}</p>
+                            <select onchange="updateTaskStatus('${t.id}', this.value)" class="text-xs rounded px-2 py-1 border outline-none cursor-pointer ${statusColor}">
+                                <option class="bg-slate-800 text-white" value="To Do" ${t.status === 'To Do' ? 'selected' : ''}>To Do</option>
+                                <option class="bg-slate-800 text-white" value="In Progress" ${t.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                <option class="bg-slate-800 text-white" value="Done" ${t.status === 'Done' ? 'selected' : ''}>Done</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-slate-800">
+                            <div id="comments-list-${t.id}" class="space-y-2 mb-3 text-sm text-slate-400">
+                                </div>
+                            <form onsubmit="addComment(event, '${t.id}')" class="flex gap-2">
+                                <input type="text" id="comment-input-${t.id}" placeholder="Type a comment..." class="flex-1 p-2 bg-slate-800 border border-slate-700 rounded text-sm focus:border-indigo-500 focus:outline-none" required>
+                                <button type="submit" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm font-bold text-white transition">Post</button>
+                            </form>
+                        </div>
+                    </div>
+                `}).join('');
+
+                // Load comments for every task we just rendered
+                tasks.forEach(t => loadComments(t.id));
+
+            } catch (err) { console.error("Failed to load tasks:", err); }
+        }
+
+        async function createNewTask() {
+            const titleInput = document.getElementById("task-title");
+            if (!titleInput.value.trim() || !selectedProjectId) return;
+            try {
+                await fetchWithAuth(`/projects/${selectedProjectId}/tasks`, {
+                    method: "POST",
+                    body: JSON.stringify({ title: titleInput.value, status: "To Do", priority: "Medium" })
+                });
+                titleInput.value = "";
+                loadTasks(); 
+            } catch (err) { alert(err.message); }
+        }
+
+        async function updateTaskStatus(taskId, newStatus) {
+            try {
+                // Hits your PATCH /tasks/{task_id}/status route
+                await fetchWithAuth(`/tasks/${taskId}/status`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ status: newStatus })
+                });
+                loadTasks(); // Refresh to update colors
+            } catch (err) {
+                alert(err.message || "Failed to update status");
+                loadTasks(); // Revert visual change on error
+            }
+        }
+
+        async function loadComments(taskId) {
+            try {
+                // Hits the new GET /tasks/{task_id}/comments route
+                const comments = await fetchWithAuth(`/tasks/${taskId}/comments`);
+                const container = document.getElementById(`comments-list-${taskId}`);
+                
+                if (comments.length === 0) return;
+                
+                container.innerHTML = comments.map(c => {
+                    const safeContent = c.content.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return `<div class="bg-slate-800 p-2 rounded border border-slate-700/50"><span class="text-slate-300">${safeContent}</span></div>`;
+                }).join('');
+            } catch (err) { console.error("Failed to load comments", err); }
+        }
+
+        async function addComment(event, taskId) {
+            event.preventDefault();
+            const input = document.getElementById(`comment-input-${taskId}`);
+            const content = input.value.trim();
+            if (!content) return;
+
+            try {
+                // Hits your POST /tasks/{task_id}/comments route
+                await fetchWithAuth(`/tasks/${taskId}/comments`, {
+                    method: "POST",
+                    body: JSON.stringify({ content: content })
+                });
+                input.value = "";
+                loadComments(taskId); // Refresh just the comments for this task
+            } catch (err) {
+                alert(err.message || "Failed to add comment");
+            }
+        }
+    </script>
+</body>
+</html>

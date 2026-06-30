@@ -61,3 +61,14 @@ async def create_comment(
     await db.commit()
     await db.refresh(comments)
     return comments
+
+
+@api_task.get("/tasks/{task_id}/comments", response_model=list[CommentResponse])
+async def get_comments_for_task(
+    task_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: TokenReturn = Depends(get_current_user),
+):
+
+    comments = await db.execute(select(Comment).where(Comment.task_id == task_id))
+    return comments.scalars().all()
