@@ -184,7 +184,7 @@
             try {
                 // Uses your GET /me route to show the user's email
                 const user = await fetchWithAuth("/me");
-                document.getElementById("user-greeting").innerText = `Signed in as ${user.sub || 'User'}`;
+                document.getElementById("user-greeting").innerText = `Signed in as ${user.user || 'User'}`;
             } catch (err) {
                 console.error("Failed to load profile", err);
             }
